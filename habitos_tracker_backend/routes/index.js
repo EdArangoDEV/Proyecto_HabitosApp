@@ -36,14 +36,38 @@ router.delete("/habitos/:id", async (req, res) => {
   }
 });
 
-router.put("/habitos/:id", async (req, res) => {
+// router.put("/habitos/:id", async (req, res) => {
+//   try {
+//     const { titulo, descripcion } = req.body;
+//     await Habito.findByIdAndUpdate(req.params.id, { titulo, descripcion });
+//     res.json({ message: "Habito actualizado" });
+//   } catch (error) {
+//     res.status(500).json({ message: "Error al actualizar el habito" });
+//   }
+// });
+
+router.patch("/habitos/markasdone:id", async (req, res) => {
   try {
-    const { titulo, descripcion } = req.body;
-    await Habito.findByIdAndUpdate(req.params.id, { titulo, descripcion });
-    res.json({ message: "Habito actualizado" });
+    const habito = await Habito.findById(req.params.id);
+    habito.lastDone = new Date();
+    if (timeDifferenceInHours(habito.lastDone, habito.lastUpdated) < 24) {
+      lastUpdated = new Date();
+      habito.days = timeDifferenceInDays(habito.lastDone, habito.startedAt);
+      habito.save();
+    }
   } catch (error) {
     res.status(500).json({ message: "Error al actualizar el habito" });
   }
 });
+
+const timeDifferenceInHours = (date1, date2) => {
+  const diffMs = Math.abs(date1 - date2); // tiempo asbsoluto en milisegundos
+  return diffMs / (1000 * 60 * 60); // tiempo en horas
+};
+
+const timeDifferenceInDays = (date1, date2) => {
+  const diffMs = Math.abs(date1 - date2); // tiempo asbsoluto en milisegundos
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24)); // tiempo en dias
+};
 
 module.exports = router;
