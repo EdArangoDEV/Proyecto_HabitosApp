@@ -54,6 +54,13 @@ router.patch("/habitos/markasdone:id", async (req, res) => {
       lastUpdated = new Date();
       habito.days = timeDifferenceInDays(habito.lastDone, habito.startedAt);
       habito.save();
+      res.status(200).json({ message: "Habito marcado como hecho" });
+    }
+    else {
+      habito.days = 1;
+      habito.startedAt = new Date();
+      habito.startedAt = new Date();
+      res.status(200).json({ message: "Habito reinicidado" });
     }
   } catch (error) {
     res.status(500).json({ message: "Error al actualizar el habito" });
