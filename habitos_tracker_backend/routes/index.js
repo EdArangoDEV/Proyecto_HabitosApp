@@ -36,30 +36,31 @@ router.delete("/habitos/:id", async (req, res) => {
   }
 });
 
-// router.put("/habitos/:id", async (req, res) => {
-//   try {
-//     const { titulo, descripcion } = req.body;
-//     await Habito.findByIdAndUpdate(req.params.id, { titulo, descripcion });
-//     res.json({ message: "Habito actualizado" });
-//   } catch (error) {
-//     res.status(500).json({ message: "Error al actualizar el habito" });
-//   }
-// });
+router.put("/habitos/:id", async (req, res) => {
+  try {
+    const { titulo, descripcion } = req.body;
+    await Habito.findByIdAndUpdate(req.params.id, { titulo, descripcion });
+    res.json({ message: "Habito actualizado" });
+  } catch (error) {
+    res.status(500).json({ message: "Error al actualizar el habito" });
+  }
+});
 
-router.patch("/habitos/markasdone:id", async (req, res) => {
+router.patch("/habitos/markasdone/:id", async (req, res) => {
   try {
     const habito = await Habito.findById(req.params.id);
     habito.lastDone = new Date();
-    if (timeDifferenceInHours(habito.lastDone, habito.lastUpdated) < 24) {
-      lastUpdated = new Date();
+    if (timeDifferenceInHours(habito.lastUpdated, habito.lastDone) <= 24) {
+      habito.lastUpdated = new Date();
       habito.days = timeDifferenceInDays(habito.lastDone, habito.startedAt);
       habito.save();
       res.status(200).json({ message: "Habito marcado como hecho" });
     }
     else {
       habito.days = 1;
+      habito.lastUpdated = new Date();
       habito.startedAt = new Date();
-      habito.startedAt = new Date();
+      habito.save();
       res.status(200).json({ message: "Habito reinicidado" });
     }
   } catch (error) {
