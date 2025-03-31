@@ -44,18 +44,31 @@ export default function Habitos({ habitos }: HabitosProps) {
     return Math.min((days / 66) * 100, 100);
   };
 
-  const handleAddHabit = () => {
+  const handleAddHabit = async  () => {
+    if (!titulo || !descripcion) {
+      alert("Por favor, completa todos los campos.");
+      return;
+    }
     if (titulo && descripcion) {
-      dispatch(
-        fetchAddHabitoThunk({
-          token: user ? user.toString() : "",
-          titulo,
-          descripcion,
-        })
-      );
-      setTitulo("");
-      setDescripcion("");
-      dispatch(fetchHabitosThunk(user ? user.toString() : ""));
+      try {
+        // Agrega el hábito
+        await dispatch(
+          fetchAddHabitoThunk({
+            token: user ? user.toString() : "",
+            titulo,
+            descripcion,
+          })
+        );
+  
+        // Limpia los campos del formulario
+        setTitulo("");
+        setDescripcion("");
+  
+        // Obtén la lista actualizada de hábitos
+        await dispatch(fetchHabitosThunk(user ? user.toString() : ""));
+      } catch (error) {
+        console.error("Error al agregar el hábito:", error);
+      }
     }
   };
 
