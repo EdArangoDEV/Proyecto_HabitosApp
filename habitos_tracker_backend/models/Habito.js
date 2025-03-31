@@ -31,7 +31,12 @@ const habitoSchema = new mongoose.Schema({
   startedAt:{
     type: Date,
     default: Date.now,
-  }
+  },
+  userId:{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Usuario",
+    required: true
+  },
 });
 
 module.exports = mongoose.model("Habito", habitoSchema);

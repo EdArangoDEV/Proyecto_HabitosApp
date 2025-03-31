@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { fetchHabitos } from "./habitoAPI";
+import { fetchHabitos, fetchAddHabito } from "./habitoAPI";
 
 type Habito = {
   _id: string;
@@ -17,6 +17,17 @@ type HabitoState = {
   error: Record<string, string | null>;
 };
 
+type markAsDoneThunkParams = {
+  habitoId: string;
+  token: string;
+}
+
+type addHabitoThunkParams = {
+  token: string;
+  titulo: string;
+  descripcion: string;
+}
+
 const initialState: HabitoState = {
   habitos: [],
   status: {},
@@ -25,16 +36,24 @@ const initialState: HabitoState = {
 
 export const fetchHabitosThunk = createAsyncThunk(
   "habito/fetchHabitos",
-  async () => {
-    return await fetchHabitos();
+  async (token: string, {rejectWithValue}) => {
+    const response = await fetchHabitos(token);
+    const responseJson = await response.json();
+    if (!response.ok) {
+      return rejectWithValue("Fallo al obtener los habitos");
+    }
+    console.log(responseJson);
+    return responseJson;
   }
 );
 
 export const markAsDoneThunk = createAsyncThunk(
   "habito/markAsDone",
-  async (habitoId: string, { rejectWithValue }) => {
+  async ({habitoId, token}: markAsDoneThunkParams, { rejectWithValue }) => {
     const response = await fetch(`http://localhost:3001/habitos/markasdone/${habitoId}`, {
       method: "PATCH",
+      headers: {
+        Authorization: "Bearer " + token}
     });
     const responseJson = await response.json();
     // console.log(response);
@@ -47,6 +66,19 @@ export const markAsDoneThunk = createAsyncThunk(
     }
   }
 );
+
+export const fetchAddHabitoThunk = createAsyncThunk("user/fetchAddHabito", async ({token, titulo, descripcion}: addHabitoThunkParams, { rejectWithValue }) => {
+  const response = await fetchAddHabito(token, titulo, descripcion);
+  const responseJson = await response.json();
+  if (!response.ok) {
+    return rejectWithValue("fallo al logear el usuario");
+  } else if (responseJson.message.toString() === "Fallo al agregar el habito") {
+    return rejectWithValue(responseJson.message);
+  } else {
+    return responseJson.token;
+  }
+});
+
 
 const habitoSlice = createSlice({
   name: "habito",
@@ -70,12 +102,14 @@ const habitoSlice = createSlice({
         state.habitos = action.payload;
       })
       .addCase(markAsDoneThunk.fulfilled, (state, action) => {
-        state.status[action.meta.arg] = "success";
-        state.error[action.meta.arg] = null;
+        state.status[action.meta.arg.habitoId] = "success";
+        state.error[action.meta.arg.habitoId] = null;
       })
       .addCase(markAsDoneThunk.rejected, (state, action) => {
-        state.status[action.meta.arg] = "failed";
-        state.error[action.meta.arg] = action.payload as string;
+        state.status[action.meta.arg.habitoId] = "failed";
+        state.error[action.meta.arg.habitoId] = action.payload as string;
+      }).addCase(fetchAddHabitoThunk.fulfilled, (state, action) => {
+        state.habitos.push(action.payload);
       });
   },
 });

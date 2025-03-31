@@ -1,25 +1,50 @@
 var express = require("express");
 var router = express.Router();
 const Habito = require("../models/Habito");
+const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
+
+// funcion para validar jwt
+const authenticateToken = (req, res, next) => {
+  const token = req.header("Authorization");
+  if (!token) return res.status(401).json({ message: "Acceso denegado, no se ha proporcionado un token" });
+
+  try {
+    const tokenSinBearer = token.replace("Bearer ", "");
+    const verified = jwt.verify(tokenSinBearer, process.env.JWT_SECRET);
+    req.user = verified; // guarda el usuario en la peticion
+    next();
+  } catch (error) {
+    console.error(error);
+    res.status(403).json({ message: "Token no valido o expirado" });
+  }
+}
+
 
 /* GET home page. */
 router.get("/", function (req, res, next) {
   res.render("index", { title: "Express" });
 });
 
-router.get("/habitos", async (req, res, next) => {
+router.get("/habitos", authenticateToken, async (req, res, next) => {
   try {
-    const habito = await Habito.find();
+    let userId = req.user && req.user.userId ? req.user.userId : res.status(500).json({ message: "Usuario no autenticado"});
+    const habito = await Habito.find({userId: new mongoose.Types.ObjectId(userId)});
+    
     res.json(habito);
   } catch (error) {
     res.status(500).json({ message: "Error al obtener los habitos" });
   }
 });
 
-router.post("/habitos", async (req, res, next) => {
+router.post("/habitos", authenticateToken, async (req, res) => {
   try {
     const { titulo, descripcion } = req.body;
-    const habito = new Habito({ titulo, descripcion });
+    let userId = req.user && req.user.userId ? req.user.userId : res.status(500).json({ message: "Usuario no autenticado"});
+    userId = new mongoose.Types.ObjectId(userId)
+    
+    const habito = new Habito({ titulo, descripcion, userId});
+    // console.log(habito);
     await habito.save();
     res.json(habito);
   } catch (error) {
@@ -27,7 +52,7 @@ router.post("/habitos", async (req, res, next) => {
   }
 });
 
-router.delete("/habitos/:id", async (req, res) => {
+router.delete("/habitos/:id",  authenticateToken, async (req, res) => {
   try {
     await Habito.findByIdAndDelete(req.params.id);
     res.json({ message: "Habito eliminado" });
@@ -36,7 +61,7 @@ router.delete("/habitos/:id", async (req, res) => {
   }
 });
 
-router.put("/habitos/:id", async (req, res) => {
+router.put("/habitos/:id", authenticateToken, async (req, res) => {
   try {
     const { titulo, descripcion } = req.body;
     await Habito.findByIdAndUpdate(req.params.id, { titulo, descripcion });
@@ -46,7 +71,7 @@ router.put("/habitos/:id", async (req, res) => {
   }
 });
 
-router.patch("/habitos/markasdone/:id", async (req, res) => {
+router.patch("/habitos/markasdone/:id",  authenticateToken, async (req, res) => {
   try {
     const habito = await Habito.findById(req.params.id);
     habito.lastDone = new Date();
