@@ -22,8 +22,8 @@ export const fetchLoginUser = async (
   nombreUsuario: string,
   password: string
 ) => {
-  console.log("nombreUsuario: " + nombreUsuario);
-  console.log("password: " + password);
+  // console.log("nombreUsuario: " + nombreUsuario);
+  // console.log("password: " + password);
 
   const response = await fetch("http://localhost:3001/users/login", {
     method: "POST",
