@@ -12,24 +12,58 @@ router.get("/", function (req, res, next) {
   res.send("respond with a resource");
 });
 
+
+/* POST registro - VERSIÓN MEJORADA */
 router.post("/registro", async (req, res, next) => {
   try {
+    // 1. VALIDACIÓN DE ENTRADA
     const { nombreUsuario, password } = req.body;
 
+    // Validar que los campos existan
+    if (!nombreUsuario || !password) {
+      return res.status(400).json({ 
+        message: "Faltan campos requeridos: nombreUsuario y password" 
+      });
+    }
+
+    // Validar longitud mínima del password (seguridad)
+    if (password.length < 8) {
+      return res.status(400).json({ 
+        message: "La contraseña debe tener al menos 8 caracteres" 
+      });
+    }
+
+
+    // 3. GENERAR SALT Y HASH (IGUAL QUE ANTES - CORRECTO)
     const salt = await bcrypt.genSalt(10);
+    
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const nUsuario = new Usuario({ nombreUsuario, password: hashedPassword });
+    
+    // 4. CREAR Y GUARDAR USUARIO
+    const nUsuario = new Usuario({ 
+      nombreUsuario, 
+      password: hashedPassword 
+    });
     await nUsuario.save();
 
-    res.status(201).json({ message: "Usuario registrado correctamente" });
+    // 5. RESPUESTA EXITOSA (sin exponer datos sensibles)
+    res.status(201).json({ 
+      message: "Usuario registrado correctamente",
+      usuarioId: nUsuario._id  // Solo ID público
+    });
+
   } catch (error) {
-    res.status(500).json({
-      message: "Error al registrar el usuario",
-      descripcion: error.toString(),
+    // 6. MANEJO DE ERRORES MEJORADO
+    console.error("Error en registro:", error); // Log para desarrolladores
+    
+    // En producción NO exponer detalles del error
+    res.status(500).json({ 
+      message: "Error interno del servidor. Intenta más tarde." 
     });
   }
 });
+
 
 router.post("/login", async (req, res, next) => {
   try {
